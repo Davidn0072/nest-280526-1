@@ -2,8 +2,11 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { User } from '../users/user.entity';
 
 @Entity('posts')
 export class Post {
@@ -19,6 +22,7 @@ export class Post {
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column('uuid')
-  userId: string;
+  @ManyToOne(() => User, (user) => user.posts, { nullable: false })
+  @JoinColumn({ name: 'userId' })
+  user: User;
 }
