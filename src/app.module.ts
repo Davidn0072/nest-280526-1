@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { Post } from './posts/post.entity';
-import { User } from './users/user.entity';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -19,7 +19,8 @@ import { User } from './users/user.entity';
       autoLoadEntities: true,
       synchronize: process.env.NODE_ENV !== 'production',
     }),
-    TypeOrmModule.forFeature([User, Post]),
+    TypeOrmModule.forFeature([Post]),
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

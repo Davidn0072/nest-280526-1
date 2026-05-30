@@ -13,7 +13,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const post_entity_1 = require("./posts/post.entity");
-const user_entity_1 = require("./users/user.entity");
+const users_module_1 = require("./users/users.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -31,7 +31,8 @@ exports.AppModule = AppModule = __decorate([
                 autoLoadEntities: true,
                 synchronize: process.env.NODE_ENV !== 'production',
             }),
-            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, post_entity_1.Post]),
+            typeorm_1.TypeOrmModule.forFeature([post_entity_1.Post]),
+            users_module_1.UsersModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
