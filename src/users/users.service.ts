@@ -5,13 +5,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
+import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './user.entity';
-
-export type CreateUserInput = {
-  name: string;
-  email: string;
-  password: string;
-};
 
 export type UserResponse = Omit<User, 'password'>;
 
@@ -22,7 +17,7 @@ export class UsersService {
     private readonly usersRepository: Repository<User>,
   ) {}
 
-  async create(input: CreateUserInput): Promise<UserResponse> {
+  async create(input: CreateUserDto): Promise<UserResponse> {
     try {
       const user = this.usersRepository.create(input);
       const saved = await this.usersRepository.save(user);

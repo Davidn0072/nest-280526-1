@@ -2,13 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../users/user.entity';
+import { CreatePostDto } from './dto/create-post.dto';
 import { Post } from './post.entity';
-
-export type CreatePostInput = {
-  title: string;
-  content: string;
-  userId: string;
-};
 
 export type PostResponse = {
   id: string;
@@ -27,7 +22,7 @@ export class PostsService {
     private readonly usersRepository: Repository<User>,
   ) {}
 
-  async create(input: CreatePostInput): Promise<PostResponse> {
+  async create(input: CreatePostDto): Promise<PostResponse> {
     const user = await this.usersRepository.findOne({
       where: { id: input.userId },
     });

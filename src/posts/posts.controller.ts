@@ -9,7 +9,7 @@ import {
   ParseUUIDPipe,
   Post,
 } from '@nestjs/common';
-import type { CreatePostInput } from './posts.service';
+import { CreatePostDto } from './dto/create-post.dto';
 import { PostsService } from './posts.service';
 
 @Controller('posts')
@@ -17,7 +17,7 @@ export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Post()
-  create(@Body() body: CreatePostInput) {
+  create(@Body() body: CreatePostDto) {
     return this.postsService.create(body);
   }
 
