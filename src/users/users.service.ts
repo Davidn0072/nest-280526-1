@@ -1,14 +1,19 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
+import { toUserResponse, type UserResponse } from './mappers/user.mapper';
 import { User } from './user.entity';
 
-export type UserResponse = Omit<User, 'password'>;
+const BCRYPT_SALT_ROUNDS = 10;
+
+const USER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  createdAt: true,
+} as const;
 
 @Injectable()
 export class UsersService {
@@ -18,32 +23,25 @@ export class UsersService {
   ) {}
 
   async create(input: CreateUserDto): Promise<UserResponse> {
-    try {
-      const user = this.usersRepository.create(input);
-      const saved = await this.usersRepository.save(user);
-      return this.omitPassword(saved);
-    } catch (error) {
-      if (
-        error instanceof QueryFailedError &&
-        (error as QueryFailedError & { code?: string }).code === '23505'
-      ) {
-        throw new ConflictException('Email already exists');
-      }
-      throw error;
-    }
+    const passwordHash = await bcrypt.hash(input.password, BCRYPT_SALT_ROUNDS);
+    const user = this.usersRepository.create({
+      name: input.name,
+      email: input.email,
+      password: passwordHash,
+    });
+    const saved = await this.usersRepository.save(user);
+    return toUserResponse(saved);
   }
 
   async findAll(): Promise<UserResponse[]> {
-    const users = await this.usersRepository.find({
-      select: { id: true, name: true, email: true, createdAt: true },
-    });
+    const users = await this.usersRepository.find({ select: USER_SELECT });
     return users;
   }
 
   async findOne(id: string): Promise<UserResponse> {
     const user = await this.usersRepository.findOne({
       where: { id },
-      select: { id: true, name: true, email: true, createdAt: true },
+      select: USER_SELECT,
     });
 
     if (!user) {
@@ -53,16 +51,19 @@ export class UsersService {
     return user;
   }
 
+  async assertExists(id: string): Promise<void> {
+    const exists = await this.usersRepository.existsBy({ id });
+
+    if (!exists) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+  }
+
   async remove(id: string): Promise<void> {
     const result = await this.usersRepository.delete(id);
 
     if (result.affected === 0) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
-  }
-
-  private omitPassword(user: User): UserResponse {
-    const { password: _, ...rest } = user;
-    return rest;
   }
 }

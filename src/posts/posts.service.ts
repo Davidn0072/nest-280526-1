@@ -1,44 +1,30 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../users/user.entity';
+import { UsersService } from '../users/users.service';
 import { CreatePostDto } from './dto/create-post.dto';
+import { toPostResponse, type PostResponse } from './mappers/post.mapper';
 import { Post } from './post.entity';
-
-export type PostResponse = {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: Date;
-  userId: string;
-};
 
 @Injectable()
 export class PostsService {
   constructor(
     @InjectRepository(Post)
     private readonly postsRepository: Repository<Post>,
-    @InjectRepository(User)
-    private readonly usersRepository: Repository<User>,
+    private readonly usersService: UsersService,
   ) {}
 
   async create(input: CreatePostDto): Promise<PostResponse> {
-    const user = await this.usersRepository.findOne({
-      where: { id: input.userId },
-    });
-
-    if (!user) {
-      throw new NotFoundException(`User with id ${input.userId} not found`);
-    }
+    await this.usersService.assertExists(input.userId);
 
     const post = this.postsRepository.create({
       title: input.title,
       content: input.content,
-      user,
+      user: { id: input.userId },
     });
 
     const saved = await this.postsRepository.save(post);
-    return this.toResponse(saved, user.id);
+    return toPostResponse(saved, input.userId);
   }
 
   async findAll(): Promise<PostResponse[]> {
@@ -47,15 +33,11 @@ export class PostsService {
       order: { createdAt: 'DESC' },
     });
 
-    return posts.map((post) => this.toResponse(post));
+    return posts.map((post) => toPostResponse(post));
   }
 
   async findByUserId(userId: string): Promise<PostResponse[]> {
-    const user = await this.usersRepository.findOne({ where: { id: userId } });
-
-    if (!user) {
-      throw new NotFoundException(`User with id ${userId} not found`);
-    }
+    await this.usersService.assertExists(userId);
 
     const posts = await this.postsRepository.find({
       where: { user: { id: userId } },
@@ -63,7 +45,7 @@ export class PostsService {
       order: { createdAt: 'DESC' },
     });
 
-    return posts.map((post) => this.toResponse(post));
+    return posts.map((post) => toPostResponse(post));
   }
 
   async remove(id: string): Promise<void> {
@@ -72,21 +54,5 @@ export class PostsService {
     if (result.affected === 0) {
       throw new NotFoundException(`Post with id ${id} not found`);
     }
-  }
-
-  private toResponse(post: Post, userId?: string): PostResponse {
-    const resolvedUserId = userId ?? post.user?.id;
-
-    if (!resolvedUserId) {
-      throw new Error('Post is missing user relation');
-    }
-
-    return {
-      id: post.id,
-      title: post.title,
-      content: post.content,
-      createdAt: post.createdAt,
-      userId: resolvedUserId,
-    };
   }
 }

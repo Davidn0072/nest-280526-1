@@ -16,48 +16,41 @@ exports.PostsService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
-const user_entity_1 = require("../users/user.entity");
+const users_service_1 = require("../users/users.service");
+const post_mapper_1 = require("./mappers/post.mapper");
 const post_entity_1 = require("./post.entity");
 let PostsService = class PostsService {
     postsRepository;
-    usersRepository;
-    constructor(postsRepository, usersRepository) {
+    usersService;
+    constructor(postsRepository, usersService) {
         this.postsRepository = postsRepository;
-        this.usersRepository = usersRepository;
+        this.usersService = usersService;
     }
     async create(input) {
-        const user = await this.usersRepository.findOne({
-            where: { id: input.userId },
-        });
-        if (!user) {
-            throw new common_1.NotFoundException(`User with id ${input.userId} not found`);
-        }
+        await this.usersService.assertExists(input.userId);
         const post = this.postsRepository.create({
             title: input.title,
             content: input.content,
-            user,
+            user: { id: input.userId },
         });
         const saved = await this.postsRepository.save(post);
-        return this.toResponse(saved, user.id);
+        return (0, post_mapper_1.toPostResponse)(saved, input.userId);
     }
     async findAll() {
         const posts = await this.postsRepository.find({
             relations: { user: true },
             order: { createdAt: 'DESC' },
         });
-        return posts.map((post) => this.toResponse(post));
+        return posts.map((post) => (0, post_mapper_1.toPostResponse)(post));
     }
     async findByUserId(userId) {
-        const user = await this.usersRepository.findOne({ where: { id: userId } });
-        if (!user) {
-            throw new common_1.NotFoundException(`User with id ${userId} not found`);
-        }
+        await this.usersService.assertExists(userId);
         const posts = await this.postsRepository.find({
             where: { user: { id: userId } },
             relations: { user: true },
             order: { createdAt: 'DESC' },
         });
-        return posts.map((post) => this.toResponse(post));
+        return posts.map((post) => (0, post_mapper_1.toPostResponse)(post));
     }
     async remove(id) {
         const result = await this.postsRepository.delete(id);
@@ -65,26 +58,12 @@ let PostsService = class PostsService {
             throw new common_1.NotFoundException(`Post with id ${id} not found`);
         }
     }
-    toResponse(post, userId) {
-        const resolvedUserId = userId ?? post.user?.id;
-        if (!resolvedUserId) {
-            throw new Error('Post is missing user relation');
-        }
-        return {
-            id: post.id,
-            title: post.title,
-            content: post.content,
-            createdAt: post.createdAt,
-            userId: resolvedUserId,
-        };
-    }
 };
 exports.PostsService = PostsService;
 exports.PostsService = PostsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(post_entity_1.Post)),
-    __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository])
+        users_service_1.UsersService])
 ], PostsService);
 //# sourceMappingURL=posts.service.js.map

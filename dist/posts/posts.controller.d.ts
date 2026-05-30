@@ -3,8 +3,8 @@ import { PostsService } from './posts.service';
 export declare class PostsController {
     private readonly postsService;
     constructor(postsService: PostsService);
-    create(body: CreatePostDto): Promise<import("./posts.service").PostResponse>;
-    findAll(): Promise<import("./posts.service").PostResponse[]>;
-    findByUser(userId: string): Promise<import("./posts.service").PostResponse[]>;
+    create(body: CreatePostDto): Promise<import("./mappers/post.mapper").PostResponse>;
+    findAll(): Promise<import("./mappers/post.mapper").PostResponse[]>;
+    findByUser(userId: string): Promise<import("./mappers/post.mapper").PostResponse[]>;
     remove(id: string): Promise<void>;
 }
